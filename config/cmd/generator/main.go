@@ -97,6 +97,13 @@ Parse PROTO_FILE and generate output value objects`)
 		c += "// loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.\n"
 		c += fmt.Sprintf("func (x *%s) loadFromEnv(prefix string, defaultValues *%s) {\n", m.Name, m.Name)
 		for _, mf := range m.Fields {
+			if mf.Label != "" {
+				// currently we don't have a way to handle repeated and oneof labels
+				// in env vars.
+				continue
+			}
+			fmt.Println(mf.Label, mf.Name)
+
 			fieldName := toPublicFieldName(mf.Name)
 			envPrefix := strings.ToUpper(strcase.ToSnake(mf.Name))
 			if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {
@@ -118,6 +125,8 @@ Parse PROTO_FILE and generate output value objects`)
 			} else if namedType, ok := mf.Type.(pbparser.NamedDataType); ok {
 				c += fmt.Sprintf("    if x.%s == nil { x.%s = new(%s) }\n", fieldName, fieldName, namedType.Name())
 				c += fmt.Sprintf("    x.%s.loadFromEnv(prefix + \"%s_\", defaultValues.%s)\n", fieldName, envPrefix, fieldName)
+			} else if mf.Label == "repeated" {
+
 			} else {
 				_type := mf.Type.Name()
 				c += fmt.Sprintf(
